@@ -18,21 +18,19 @@ import { useEffect, useState } from 'react'
 import { Card, CardBody } from '@heroui/card'
 
 export default function WorkoutsPage() {
-  const {
-    workouts,
-    loadWorkouts,
-    deleteWorkout,
-    isLoading,
-    getUniqueCategories,
-    loadCategories,
-  } = useWorkoutStore()
+  const { workouts, isLoading, getUniqueCategories } = useWorkoutStore()
+
+  const loadWorkouts = useWorkoutStore((state) => state.loadWorkouts)
+  const loadCategories = useWorkoutStore((state) => state.loadCategories)
+  const deleteWorkout = useWorkoutStore((state) => state.deleteWorkout)
+
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
   useEffect(() => {
     loadWorkouts()
     loadCategories()
-  }, [loadWorkouts, loadCategories])
+  }, []) // Remove dependencies to prevent infinite loops
 
   const uniqueCategories = getUniqueCategories()
 

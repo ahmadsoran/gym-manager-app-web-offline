@@ -11,6 +11,7 @@ import {
   IconCheck,
   IconTrash,
   IconUpload,
+  IconRefresh,
 } from '@tabler/icons-react'
 
 interface CameraRecorderProps {
@@ -30,6 +31,9 @@ export default function CameraRecorder({
   const [capturedFile, setCapturedFile] = useState<File | null>(null)
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image')
   const [isReady, setIsReady] = useState(false)
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>(
+    'environment'
+  )
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -40,7 +44,7 @@ export default function CameraRecorder({
   const initCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: { facingMode },
         audio: true,
       })
 
@@ -52,7 +56,7 @@ export default function CameraRecorder({
     } catch (error) {
       console.error('Error accessing camera:', error)
     }
-  }, [])
+  }, [facingMode])
 
   // Cleanup camera
   const cleanupCamera = useCallback(() => {
@@ -67,14 +71,23 @@ export default function CameraRecorder({
   }, [])
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !previewUrl) {
       initCamera()
     } else {
       cleanupCamera()
     }
 
     return cleanupCamera
-  }, [isOpen, initCamera, cleanupCamera])
+  }, [isOpen, initCamera, cleanupCamera, previewUrl])
+
+  // Switch camera function
+  const switchCamera = useCallback(async () => {
+    if (previewUrl) return // Don't switch camera while in preview mode
+
+    setIsReady(false)
+    cleanupCamera()
+    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'))
+  }, [previewUrl, cleanupCamera])
 
   const handleTakePhoto = useCallback(async () => {
     if (!videoRef.current || !isReady) return
@@ -99,12 +112,14 @@ export default function CameraRecorder({
           setPreviewUrl(url)
           setCapturedFile(file)
           setMediaType('image')
+          // Stop camera stream to show preview properly
+          cleanupCamera()
         }
       },
       'image/jpeg',
       0.9
     )
-  }, [isReady])
+  }, [isReady, cleanupCamera])
 
   const handleStartRecording = useCallback(async () => {
     if (!streamRef.current || !isReady) return
@@ -131,6 +146,8 @@ export default function CameraRecorder({
         setPreviewUrl(url)
         setCapturedFile(file)
         setMediaType('video')
+        // Stop camera stream to show preview properly
+        cleanupCamera()
       }
 
       mediaRecorderRef.current = mediaRecorder
@@ -139,7 +156,7 @@ export default function CameraRecorder({
     } catch (error) {
       console.error('Error starting recording:', error)
     }
-  }, [isReady])
+  }, [isReady, cleanupCamera])
 
   const handleStopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -163,17 +180,22 @@ export default function CameraRecorder({
     setCapturedFile(null)
     setIsRecording(false)
     setMode('photo')
+    setFacingMode('environment') // Reset to back camera
     cleanupCamera()
     onClose()
   }
 
-  const handleRetake = () => {
+  const handleRetake = useCallback(() => {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl)
     }
     setPreviewUrl(null)
     setCapturedFile(null)
-  }
+    // Restart camera after clearing preview
+    setTimeout(() => {
+      initCamera()
+    }, 100)
+  }, [previewUrl, initCamera])
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -226,21 +248,35 @@ export default function CameraRecorder({
               </Button>
             </div>
 
-            <input
-              type='file'
-              accept='image/*,video/*'
-              onChange={handleFileUpload}
-              className='hidden'
-              id='file-upload'
-            />
-            <Button
-              isIconOnly
-              variant='light'
-              color='default'
-              className='text-white'
-              onPress={() => document.getElementById('file-upload')?.click()}>
-              <IconUpload size={24} />
-            </Button>
+            <div className='flex gap-2'>
+              {!previewUrl && (
+                <Button
+                  isIconOnly
+                  variant='light'
+                  color='default'
+                  className='text-white'
+                  onPress={switchCamera}
+                  disabled={!isReady || isRecording}>
+                  <IconRefresh size={20} />
+                </Button>
+              )}
+
+              <input
+                type='file'
+                accept='image/*,video/*'
+                onChange={handleFileUpload}
+                className='hidden'
+                id='file-upload'
+              />
+              <Button
+                isIconOnly
+                variant='light'
+                color='default'
+                className='text-white'
+                onPress={() => document.getElementById('file-upload')?.click()}>
+                <IconUpload size={24} />
+              </Button>
+            </div>
           </div>
 
           {/* Camera/Preview Area */}

@@ -1,6 +1,6 @@
 const withPWA = require('next-pwa')({
   dest: 'public',
-  disable: false, // Keep PWA enabled but handle Turbopack conflicts gracefully
+  disable: process.env.NODE_ENV === 'development', // Disable PWA in development
   register: true,
   skipWaiting: true,
   sw: 'sw.js',
