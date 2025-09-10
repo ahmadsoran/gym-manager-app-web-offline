@@ -9,6 +9,7 @@ export interface WorkoutPlan {
   updatedAt: Date
   sets: Set[]
   media: Media[]
+  urlLinks?: UrlLink[]
 }
 
 export interface Set {
@@ -28,6 +29,19 @@ export interface Media {
   createdAt: Date
 }
 
+export interface UrlLink {
+  id: string // UUID
+  url: string
+  title?: string
+  description?: string
+  thumbnailUrl?: string
+  type: 'video' | 'image' | 'webpage'
+  isYouTube?: boolean
+  youTubeId?: string
+  embedUrl?: string
+  createdAt: Date
+}
+
 // Form types for creating/editing
 export interface CreateWorkoutPlanData {
   title: string
@@ -35,6 +49,7 @@ export interface CreateWorkoutPlanData {
   category?: string
   sets: CreateSetData[]
   media?: File[]
+  urlLinks?: import('@//lib/url-metadata-fetcher').UrlMetadata[]
 }
 
 export interface CreateSetData {
