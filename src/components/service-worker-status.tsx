@@ -77,7 +77,12 @@ export function ServiceWorkerStatus() {
       if (text.includes('Offline Page') || text.includes('offline')) {
         alert('✅ Fallback working! Non-existent page returns offline content')
       } else {
-        alert('❌ Fallback not working - got: ' + response.status + ' ' + text.substring(0, 100))
+        alert(
+          '❌ Fallback not working - got: ' +
+            response.status +
+            ' ' +
+            text.substring(0, 100)
+        )
       }
     } catch (error) {
       alert('❌ Fallback test failed: ' + error)
