@@ -1,7 +1,13 @@
 import { create } from 'zustand'
-import { WorkoutPlan, CreateWorkoutPlanData, Media } from '@//types/gym'
+import {
+  WorkoutPlan,
+  CreateWorkoutPlanData,
+  Media,
+  UrlLink,
+} from '@//types/gym'
 import { db, type Category } from '@//lib/database'
 import { v4 as uuidv4 } from 'uuid'
+import { type UrlMetadata } from '@//lib/url-metadata-fetcher'
 
 interface WorkoutStore {
   workouts: WorkoutPlan[]
@@ -23,6 +29,7 @@ interface WorkoutStore {
   isCategoryUsed: (categoryName: string) => boolean
   // Media management
   fileToMedia: (file: File) => Media
+  urlMetadataToUrlLink: (metadata: UrlMetadata) => UrlLink
   addMediaToWorkout: (workoutId: string, files: File[]) => Promise<void>
   removeMediaFromWorkout: (workoutId: string, mediaId: string) => Promise<void>
   updateWorkoutMedia: (workoutId: string, files: File[]) => Promise<void>
@@ -164,6 +171,11 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
           )
         : []
 
+      // Process URL links if any
+      const urlLinks = data.urlLinks
+        ? data.urlLinks.map((metadata) => get().urlMetadataToUrlLink(metadata))
+        : []
+
       const now = new Date()
       const workout: WorkoutPlan = {
         id: uuidv4(),
@@ -179,6 +191,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
           notes: set.notes,
         })),
         media: mediaItems,
+        urlLinks: urlLinks,
       }
 
       await db.workoutPlans.add(workout)
@@ -275,6 +288,21 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
         file.name ||
         `${file.type.startsWith('image/') ? 'photo' : 'video'}-${Date.now()}`,
       size: file.size,
+      createdAt: new Date(),
+    }
+  },
+
+  urlMetadataToUrlLink: (metadata: UrlMetadata): UrlLink => {
+    return {
+      id: uuidv4(),
+      url: metadata.url,
+      title: metadata.title,
+      description: metadata.description,
+      thumbnailUrl: metadata.thumbnailUrl,
+      type: metadata.type,
+      isYouTube: metadata.isYouTube,
+      youTubeId: metadata.youTubeId,
+      embedUrl: metadata.embedUrl,
       createdAt: new Date(),
     }
   },

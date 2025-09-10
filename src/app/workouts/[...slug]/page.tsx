@@ -9,6 +9,7 @@ import { Textarea } from '@heroui/input'
 import { Autocomplete, AutocompleteItem } from '@heroui/autocomplete'
 import { Chip } from '@heroui/chip'
 import { Link } from '@heroui/link'
+import { Tabs, Tab } from '@heroui/tabs'
 import {
   IconPlus,
   IconMinus,
@@ -18,12 +19,18 @@ import {
   IconBarbell,
   IconCalendar,
   IconCamera,
+  IconLink,
 } from '@tabler/icons-react'
 import { useWorkoutStore } from '@//store/workout-store'
 import { type CreateWorkoutPlanData, type CreateSetData } from '@//types/gym'
 import MobileHeader from '@//components/mobile-header'
 import CameraRecorder from '@//components/camera-recorder'
 import { PhotoView } from 'react-photo-view'
+import {
+  fetchUrlMetadata,
+  isValidUrl,
+  type UrlMetadata,
+} from '@//lib/url-metadata-fetcher'
 
 export default function WorkoutPage() {
   const router = useRouter()
@@ -58,6 +65,7 @@ export default function WorkoutPage() {
     category: '',
     sets: [{ reps: 10, weight: undefined, notes: '' }],
     media: [],
+    urlLinks: [],
   })
 
   const [categoryInputValue, setCategoryInputValue] = useState('')
@@ -65,6 +73,13 @@ export default function WorkoutPage() {
   const [mediaFiles, setMediaFiles] = useState<
     Array<{ file: File; type: 'image' | 'video'; url: string }>
   >([])
+
+  // URL media states
+  const [mediaTabSelected, setMediaTabSelected] = useState('media')
+  const [urlInput, setUrlInput] = useState('')
+  const [urlMetadata, setUrlMetadata] = useState<UrlMetadata | null>(null)
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false)
+  const [urlError, setUrlError] = useState('')
 
   useEffect(() => {
     loadWorkouts()
@@ -85,6 +100,7 @@ export default function WorkoutPage() {
             weight: set.weight,
             notes: set.notes || '',
           })),
+          urlLinks: workout.urlLinks || [],
           // Note: We don't need to set media in formData for edit mode
           // since we're using the workout.media directly from the store
         })
@@ -156,6 +172,48 @@ export default function WorkoutPage() {
         media: [...(prev.media || []), file],
       }))
     }
+  }
+
+  const handleUrlSubmit = async () => {
+    if (!urlInput.trim()) {
+      setUrlError('Please enter a valid URL')
+      return
+    }
+
+    if (!isValidUrl(urlInput)) {
+      setUrlError('Please enter a valid URL format')
+      return
+    }
+
+    setIsLoadingUrl(true)
+    setUrlError('')
+
+    try {
+      const metadata = await fetchUrlMetadata(urlInput.trim())
+      console.log({ metadata })
+      setUrlMetadata(metadata)
+
+      // Add URL metadata to form data
+      setFormData((prev) => ({
+        ...prev,
+        urlLinks: [...(prev.urlLinks || []), metadata],
+      }))
+
+      // Clear input
+      setUrlInput('')
+    } catch (error) {
+      setUrlError('Failed to fetch URL metadata. Please try again.')
+      console.error('Error fetching URL metadata:', error)
+    } finally {
+      setIsLoadingUrl(false)
+    }
+  }
+
+  const removeUrlLink = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      urlLinks: prev.urlLinks?.filter((_: any, i: number) => i !== index) || [],
+    }))
   }
 
   const removeMedia = async (index: number) => {
@@ -385,6 +443,83 @@ export default function WorkoutPage() {
             </Card>
           )}
 
+          {/* Exercise URL Links */}
+          {workout.urlLinks && workout.urlLinks.length > 0 && (
+            <Card>
+              <CardHeader>
+                <h2 className='text-lg font-semibold'>Exercise Links</h2>
+              </CardHeader>
+              <CardBody className='space-y-4'>
+                {workout.urlLinks.map((urlLink, index) => (
+                  <div
+                    key={urlLink.id || index}
+                    className='border border-default-200 rounded-lg p-4'>
+                    <div className='flex gap-3'>
+                      {urlLink.thumbnailUrl && (
+                        <div className='flex-shrink-0'>
+                          {urlLink.isYouTube ? (
+                            <div className='relative'>
+                              <img
+                                src={urlLink.thumbnailUrl}
+                                alt='Video thumbnail'
+                                className='w-24 h-18 object-cover rounded'
+                              />
+                              <div className='absolute inset-0 flex items-center justify-center'>
+                                <div className='w-10 h-10 bg-red-600 rounded-full flex items-center justify-center'>
+                                  <div className='w-0 h-0 border-l-[8px] border-l-white border-y-[5px] border-y-transparent ml-1'></div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              src={urlLink.thumbnailUrl}
+                              alt='Link thumbnail'
+                              className='w-24 h-18 object-cover rounded'
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      <div className='flex-1 min-w-0'>
+                        <h4 className='font-semibold text-base mb-2'>
+                          {urlLink.title || 'External Link'}
+                        </h4>
+                        {urlLink.description && (
+                          <p className='text-sm text-default-600 mb-3'>
+                            {urlLink.description}
+                          </p>
+                        )}
+                        <div className='flex items-center gap-3 mb-3'>
+                          <Chip size='sm' variant='flat' color='primary'>
+                            {urlLink.isYouTube ? 'YouTube' : urlLink.type}
+                          </Chip>
+                          <a
+                            href={urlLink.url}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-sm text-primary hover:underline'>
+                            View Original
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {urlLink.isYouTube && urlLink.embedUrl && (
+                      <div className='mt-4'>
+                        <iframe
+                          src={`${urlLink.embedUrl}?autoplay=1&mute=1`}
+                          className='w-full h-48 rounded-lg'
+                          allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardBody>
+            </Card>
+          )}
+
           {/* Sets Details */}
           <Card>
             <CardHeader>
@@ -564,109 +699,272 @@ export default function WorkoutPage() {
 
           {/* Media Section */}
           <Card>
-            <CardHeader className='flex justify-between items-center pb-3'>
+            <CardHeader className='pb-3'>
               <h2 className='text-lg font-semibold'>Exercise Media</h2>
-              {!isDetailsMode && (
-                <Button
-                  color='primary'
-                  variant='flat'
-                  size='sm'
-                  startContent={<IconCamera size={16} />}
-                  onPress={() => setIsCameraOpen(true)}>
-                  Add Media
-                </Button>
-              )}
             </CardHeader>
             <CardBody className='space-y-4'>
-              {(() => {
-                // Determine which media to display
-                const displayMedia =
-                  isEditMode || isDetailsMode
-                    ? workout?.media || []
-                    : mediaFiles
+              <Tabs
+                selectedKey={mediaTabSelected}
+                onSelectionChange={(key) => setMediaTabSelected(key as string)}
+                variant='underlined'
+                color='primary'
+                className='w-full'>
+                <Tab key='media' title='Media'>
+                  <div className='space-y-4'>
+                    {!isDetailsMode && (
+                      <div className='flex justify-center'>
+                        <Button
+                          color='primary'
+                          variant='flat'
+                          size='sm'
+                          startContent={<IconCamera size={16} />}
+                          onPress={() => setIsCameraOpen(true)}>
+                          Capture Media
+                        </Button>
+                      </div>
+                    )}
 
-                const hasMedia = displayMedia.length > 0
+                    {(() => {
+                      // Determine which media to display
+                      const displayMedia =
+                        isEditMode || isDetailsMode
+                          ? workout?.media || []
+                          : mediaFiles
 
-                return hasMedia ? (
-                  <div className='grid grid-cols-2 gap-3'>
-                    {displayMedia.map((media, index) => {
-                      // Handle both Media objects (from database) and local media files
-                      const isStoredMedia = 'id' in media
-                      const mediaUrl = isStoredMedia ? media.url : media.url
-                      const mediaType = isStoredMedia ? media.type : media.type
-                      // Normalize media types: both 'video' and 'image'/'photo' should work
-                      const isVideo = mediaType === 'video'
+                      const hasMedia = displayMedia.length > 0
 
-                      return (
-                        <div
-                          key={isStoredMedia ? media.id : index}
-                          className='relative group'>
-                          {isVideo ? (
-                            <video
-                              src={mediaUrl}
-                              className='w-full h-24 object-cover rounded-lg'
-                              controls={isDetailsMode ? true : false}
-                              autoPlay={isDetailsMode ? true : false}
-                              muted={isDetailsMode ? true : false}
-                              loop={isDetailsMode ? true : false}
-                              playsInline={isDetailsMode ? true : false}
-                            />
-                          ) : (
-                            <PhotoView src={mediaUrl}>
-                              <img
-                                src={mediaUrl}
-                                alt='Exercise media'
-                                className='w-full h-48 object-cover rounded-lg'
-                              />
-                            </PhotoView>
-                          )}
-                          {!isDetailsMode && (
-                            <Button
-                              isIconOnly
-                              size='sm'
-                              variant='solid'
-                              color='danger'
-                              className='absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity'
-                              onPress={() => removeMedia(index)}>
-                              <IconTrash size={12} />
-                            </Button>
-                          )}
-                          <div className='absolute bottom-1 left-1'>
-                            <Chip
-                              size='sm'
-                              variant='solid'
-                              color='default'
-                              className='text-xs'>
-                              {isVideo ? 'Video' : 'Photo'}
-                            </Chip>
-                          </div>
-                          {isStoredMedia && (
-                            <div className='absolute bottom-1 right-1'>
-                              <Chip
-                                size='sm'
-                                variant='solid'
-                                color='secondary'
-                                className='text-xs'>
-                                {(media.size / 1024 / 1024).toFixed(1)}MB
-                              </Chip>
-                            </div>
-                          )}
+                      return hasMedia ? (
+                        <div className='grid grid-cols-2 gap-3'>
+                          {displayMedia.map((media, index) => {
+                            // Handle both Media objects (from database) and local media files
+                            const isStoredMedia = 'id' in media
+                            const mediaUrl = isStoredMedia
+                              ? media.url
+                              : media.url
+                            const mediaType = isStoredMedia
+                              ? media.type
+                              : media.type
+                            // Normalize media types: both 'video' and 'image'/'photo' should work
+                            const isVideo = mediaType === 'video'
+
+                            return (
+                              <div
+                                key={isStoredMedia ? media.id : index}
+                                className='relative group'>
+                                {isVideo ? (
+                                  <video
+                                    src={mediaUrl}
+                                    className='w-full h-24 object-cover rounded-lg'
+                                    controls={isDetailsMode ? true : false}
+                                    autoPlay={isDetailsMode ? true : false}
+                                    muted={isDetailsMode ? true : false}
+                                    loop={isDetailsMode ? true : false}
+                                    playsInline={isDetailsMode ? true : false}
+                                  />
+                                ) : (
+                                  <PhotoView src={mediaUrl}>
+                                    <img
+                                      src={mediaUrl}
+                                      alt='Exercise media'
+                                      className='w-full h-48 object-cover rounded-lg'
+                                    />
+                                  </PhotoView>
+                                )}
+                                {!isDetailsMode && (
+                                  <Button
+                                    isIconOnly
+                                    size='sm'
+                                    variant='solid'
+                                    color='danger'
+                                    className='absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity'
+                                    onPress={() => removeMedia(index)}>
+                                    <IconTrash size={12} />
+                                  </Button>
+                                )}
+                                <div className='absolute bottom-1 left-1'>
+                                  <Chip
+                                    size='sm'
+                                    variant='solid'
+                                    color='default'
+                                    className='text-xs'>
+                                    {isVideo ? 'Video' : 'Photo'}
+                                  </Chip>
+                                </div>
+                                {isStoredMedia && (
+                                  <div className='absolute bottom-1 right-1'>
+                                    <Chip
+                                      size='sm'
+                                      variant='solid'
+                                      color='secondary'
+                                      className='text-xs'>
+                                      {(media.size / 1024 / 1024).toFixed(1)}MB
+                                    </Chip>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className='text-center py-8 text-default-500'>
+                          <IconCamera
+                            size={48}
+                            className='mx-auto mb-4 opacity-50'
+                          />
+                          <p className='text-sm'>No media added yet</p>
+                          <p className='text-xs mt-1'>
+                            {isDetailsMode
+                              ? 'No media was captured for this workout'
+                              : 'Capture photos or videos of your exercises'}
+                          </p>
                         </div>
                       )
-                    })}
+                    })()}
                   </div>
-                ) : (
-                  <div className='text-center py-8 text-default-500'>
-                    <IconCamera size={48} className='mx-auto mb-4 opacity-50' />
-                    <p className='text-sm'>No media added yet</p>
-                    <p className='text-xs mt-1'>
-                      {isDetailsMode
-                        ? 'No media was captured for this workout'
-                        : 'Capture photos or videos of your exercises'}
-                    </p>
+                </Tab>
+
+                <Tab key='url' title='URL'>
+                  <div className='space-y-4'>
+                    {!isDetailsMode && (
+                      <div className='flex gap-2 items-center'>
+                        <Input
+                          label='URL'
+                          placeholder='Enter URL'
+                          value={urlInput}
+                          onValueChange={(value) => {
+                            setUrlInput(value?.trim() || '')
+                            setUrlError('')
+                          }}
+                          isInvalid={!!urlError}
+                          errorMessage={urlError}
+                          startContent={<IconLink size={16} />}
+                          className='flex-1'
+                        />
+                        <Button
+                          color='primary'
+                          variant='flat'
+                          size='lg'
+                          isLoading={isLoadingUrl}
+                          isDisabled={!urlInput.trim() || isLoadingUrl}
+                          onPress={handleUrlSubmit}
+                          startContent={
+                            !isLoadingUrl && <IconPlus size={16} />
+                          }>
+                          Add
+                        </Button>
+                      </div>
+                    )}
+
+                    {(() => {
+                      const displayUrlLinks = formData.urlLinks || []
+                      const hasUrlLinks = displayUrlLinks.length > 0
+
+                      return hasUrlLinks ? (
+                        <div className='space-y-3'>
+                          {displayUrlLinks.map((urlLink, index) => (
+                            <div
+                              key={index}
+                              className='relative group border border-default-200 rounded-lg p-3'>
+                              <div className='flex gap-3'>
+                                {urlLink.thumbnailUrl && (
+                                  <div className='flex-shrink-0'>
+                                    {urlLink.isYouTube ? (
+                                      <div className='relative'>
+                                        <img
+                                          src={urlLink.thumbnailUrl}
+                                          alt='Video thumbnail'
+                                          className='w-20 h-14 object-cover rounded'
+                                        />
+                                        <div className='absolute inset-0 flex items-center justify-center'>
+                                          <div className='w-8 h-8 bg-red-600 rounded-full flex items-center justify-center'>
+                                            <div className='w-0 h-0 border-l-[6px] border-l-white border-y-[4px] border-y-transparent ml-0.5'></div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={urlLink.thumbnailUrl}
+                                        alt='Link thumbnail'
+                                        className='w-20 h-14 object-cover rounded'
+                                      />
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className='flex-1 min-w-0'>
+                                  <h4 className='font-medium text-sm truncate'>
+                                    {urlLink.title || 'External Link'}
+                                  </h4>
+                                  {urlLink.description && (
+                                    <p className='text-xs text-default-500 mt-1 line-clamp-2'>
+                                      {urlLink.description}
+                                    </p>
+                                  )}
+                                  <div className='flex items-center gap-2 mt-2'>
+                                    <Chip
+                                      size='sm'
+                                      variant='flat'
+                                      color='primary'>
+                                      {urlLink.isYouTube
+                                        ? 'YouTube'
+                                        : urlLink.type}
+                                    </Chip>
+                                    <a
+                                      href={urlLink.url}
+                                      target='_blank'
+                                      rel='noopener noreferrer'
+                                      className='text-xs text-primary hover:underline truncate'>
+                                      {urlLink.url}
+                                    </a>
+                                  </div>
+                                </div>
+
+                                {!isDetailsMode && (
+                                  <Button
+                                    isIconOnly
+                                    size='sm'
+                                    variant='light'
+                                    color='danger'
+                                    className='opacity-0 group-hover:opacity-100 transition-opacity'
+                                    onPress={() => removeUrlLink(index)}>
+                                    <IconTrash size={14} />
+                                  </Button>
+                                )}
+                              </div>
+
+                              {urlLink.isYouTube &&
+                                urlLink.embedUrl &&
+                                isDetailsMode && (
+                                  <div className='mt-3'>
+                                    <iframe
+                                      src={`${urlLink.embedUrl}?autoplay=1&mute=1`}
+                                      className='w-full h-40 rounded-lg'
+                                      allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                                      allowFullScreen
+                                    />
+                                  </div>
+                                )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className='text-center py-8 text-default-500'>
+                          <IconLink
+                            size={48}
+                            className='mx-auto mb-4 opacity-50'
+                          />
+                          <p className='text-sm'>No URLs added yet</p>
+                          <p className='text-xs mt-1'>
+                            {isDetailsMode
+                              ? 'No URLs were added for this workout'
+                              : 'Add YouTube videos, images, or reference links'}
+                          </p>
+                        </div>
+                      )
+                    })()}
                   </div>
-                )
-              })()}
+                </Tab>
+              </Tabs>
             </CardBody>
           </Card>
 
