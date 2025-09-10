@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Gym Manager',
+    title: 'Workout Manager',
   },
   formatDetection: {
     telephone: false,

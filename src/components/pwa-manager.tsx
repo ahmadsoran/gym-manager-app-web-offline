@@ -110,13 +110,13 @@ export default function PWAManager() {
           <ModalHeader className='flex flex-col gap-1'>
             <div className='flex items-center gap-2'>
               <IconDownload size={24} className='text-primary' />
-              Install Gym Manager
+              Install Workout Manager
             </div>
           </ModalHeader>
           <ModalBody>
             <div className='space-y-4'>
               <p className='text-default-600'>
-                Install Gym Manager on your device for the best experience:
+                Install Workout Manager on your device for the best experience:
               </p>
               <ul className='space-y-2 text-sm text-default-500'>
                 <li className='flex items-center gap-2'>

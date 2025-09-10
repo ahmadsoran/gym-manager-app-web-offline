@@ -1,4 +1,4 @@
-// Core types for Gym Manager App based on data-model.md
+// Core types for Workout Manager App based on data-model.md
 
 export interface WorkoutPlan {
   id: string // UUID

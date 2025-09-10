@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig
 
 export const siteConfig = {
-  name: 'Gym Manager',
-  description: 'Offline-first gym manager for workout plans and tracking.',
+  name: 'Workout Manager',
+  description: 'Offline-first Workout Manager for workout plans and tracking.',
   navItems: [
     {
       label: 'Dashboard',

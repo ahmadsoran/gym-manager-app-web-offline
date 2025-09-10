@@ -22,7 +22,7 @@ export default function Navbar() {
         <NavbarBrand as='li' className='gap-3 max-w-fit'>
           <Link className='flex justify-start items-center gap-2' href='/'>
             <IconBarbell className='text-primary' size={32} />
-            <p className='font-bold text-inherit text-xl'>Gym Manager</p>
+            <p className='font-bold text-inherit text-xl'>Workout Manager</p>
           </Link>
         </NavbarBrand>
         <ul className='hidden sm:flex gap-4 justify-start ml-2'>
