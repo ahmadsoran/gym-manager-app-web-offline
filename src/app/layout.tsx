@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import { Providers } from './providers'
 import BottomNavigation from '@//components/bottom-navigation'
 import PWAManager from '@//components/pwa-manager'
+import Footer from '@//components/footer'
 
 import { siteConfig } from '@//config/site'
 import { fontSans } from '@//config/fonts'
@@ -103,7 +104,8 @@ export default function RootLayout({
         )}>
         <Providers themeProps={{ attribute: 'class', defaultTheme: 'dark' }}>
           <div className='relative flex flex-col min-h-screen max-w-sm mx-auto bg-background py-10'>
-            <main className='flex-1 pb-20 safe-area-bottom'>{children}</main>
+            <main className='flex-1 safe-area-bottom'>{children}</main>
+            <Footer />
             <BottomNavigation />
             <PWAManager />
           </div>
