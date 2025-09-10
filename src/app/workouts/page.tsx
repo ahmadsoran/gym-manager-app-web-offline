@@ -209,9 +209,9 @@ export default function WorkoutsPage() {
                         href={`/workouts/${workout.id}`}
                         isIconOnly
                         size='sm'
-                        variant='light'
+                        radius='full'
+                        variant='shadow'
                         color='default'
-                        className='w-8 h-8'
                         aria-label='View workout details'>
                         <IconEye size={14} />
                       </Button>
@@ -220,18 +220,18 @@ export default function WorkoutsPage() {
                         href={`/workouts/edit/${workout.id}`}
                         isIconOnly
                         size='sm'
-                        variant='light'
+                        radius='full'
+                        variant='shadow'
                         color='primary'
-                        className='w-8 h-8'
                         aria-label='Edit workout'>
                         <IconEdit size={14} />
                       </Button>
                       <Button
                         isIconOnly
                         size='sm'
-                        variant='light'
+                        variant='shadow'
+                        radius='full'
                         color='danger'
-                        className='w-8 h-8'
                         aria-label='Delete workout'
                         onPress={() => handleDelete(workout.id)}>
                         <IconTrash size={14} />
