@@ -444,7 +444,7 @@ export default function WorkoutPage() {
             <CardBody className='space-y-4'>
               <Input
                 label='Workout Title'
-                placeholder='e.g., Push Day, Leg Day, Cardio Session'
+                placeholder='e.g., Tricep Dips, Push Ups'
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 isRequired
