@@ -15,6 +15,21 @@ export const metadata: Metadata = {
     template: `%s - ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  keywords: [
+    'workout',
+    'fitness',
+    'gym',
+    'exercise',
+    'training',
+    'offline',
+    'PWA',
+  ],
+  authors: [{ name: 'Workout Manager Team' }],
+  creator: 'Workout Manager',
+  publisher: 'Workout Manager',
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_BASE_URL || 'https://localhost:3000',
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -32,6 +47,15 @@ export const metadata: Metadata = {
       template: `%s - ${siteConfig.name}`,
     },
     description: siteConfig.description,
+    url: process.env.NEXT_PUBLIC_BASE_URL || 'https://localhost:3000',
+    images: [
+      {
+        url: '/icons/icon-512x512.png',
+        width: 512,
+        height: 512,
+        alt: 'Workout Manager App Icon',
+      },
+    ],
   },
   twitter: {
     card: 'summary',
@@ -40,6 +64,7 @@ export const metadata: Metadata = {
       template: `%s - ${siteConfig.name}`,
     },
     description: siteConfig.description,
+    images: ['/icons/icon-512x512.png'],
   },
   icons: {
     icon: '/favicon.ico',
