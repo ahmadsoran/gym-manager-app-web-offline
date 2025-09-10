@@ -4,6 +4,14 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   sw: 'sw.js',
+  fallbacks: {
+    // Don't redirect to offline page, let the app handle offline state
+    document: null,
+    image: null,
+    audio: null,
+    video: null,
+    font: null,
+  },
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -29,7 +37,7 @@ const withPWA = require('next-pwa')({
     },
     {
       urlPattern: /\.(?:js|css|woff|woff2|ttf|eot)$/i,
-      handler: 'StaleWhileRevalidate',
+      handler: 'CacheFirst',
       options: {
         cacheName: 'static-assets',
         expiration: {
@@ -50,13 +58,13 @@ const withPWA = require('next-pwa')({
       },
     },
     {
-      urlPattern: /^https?.*$/i,
-      handler: 'NetworkFirst',
+      // Cache all navigation requests (pages)
+      urlPattern: /^https?:\/\/[^\/]+\/(?!api\/).*/i,
+      handler: 'CacheFirst',
       options: {
-        cacheName: 'https-calls',
-        networkTimeoutSeconds: 15,
+        cacheName: 'pages-cache',
         expiration: {
-          maxEntries: 128,
+          maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
         },
         cacheableResponse: {
