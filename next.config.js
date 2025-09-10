@@ -1,9 +1,95 @@
 const withPWA = require('next-pwa')({
   dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
+  disable: false, // Keep PWA enabled but handle Turbopack conflicts gracefully
   register: true,
   skipWaiting: true,
   sw: 'sw.js',
+  buildExcludes: [/app-build-manifest\.json$/], // Exclude problematic build files
+  fallbacks: {
+    // Serve offline page for document requests when not cached
+    document: '/offline',
+    image: '/icons/icon-192x192.png',
+    audio: null,
+    video: null,
+    font: null,
+  },
+  runtimeCaching: [
+    // Start URL - Must be cached for offline functionality
+    {
+      urlPattern: '/',
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'start-url',
+        expiration: {
+          maxEntries: 1,
+          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        },
+      },
+    },
+    // Static Assets - JS, CSS, Fonts
+    {
+      urlPattern: /\.(?:js|css|woff|woff2|ttf|eot)$/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'static-assets',
+        expiration: {
+          maxEntries: 64,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        },
+      },
+    },
+    // Images and Icons
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'images',
+        expiration: {
+          maxEntries: 64,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+        },
+      },
+    },
+    // Navigation requests (pages)
+    {
+      urlPattern: /^https?:\/\/[^\/]+\/(?!api\/).*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'pages-cache',
+        expiration: {
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        },
+        networkTimeoutSeconds: 3,
+        cacheableResponse: {
+          statuses: [0, 200],
+        },
+      },
+    },
+    // External Fonts
+    {
+      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'google-fonts',
+        expiration: {
+          maxEntries: 4,
+          maxAgeSeconds: 365 * 24 * 60 * 60, // 365 days
+        },
+      },
+    },
+    {
+      urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'google-fonts-static',
+        expiration: {
+          maxEntries: 4,
+          maxAgeSeconds: 365 * 24 * 60 * 60, // 365 days
+        },
+      },
+    },
+  ],
 })
 
 /** @type {import('next').NextConfig} */
