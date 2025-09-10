@@ -25,6 +25,12 @@ export class GymDatabase extends Dexie {
       media: 'id, type, createdAt',
       categories: 'id, name, createdAt',
     })
+
+    this.version(3).stores({
+      workoutPlans: 'id, title, category, createdAt, updatedAt',
+      media: 'id, type, name, size, createdAt',
+      categories: 'id, name, createdAt',
+    })
   }
 }
 

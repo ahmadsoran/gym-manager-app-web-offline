@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { WorkoutPlan, CreateWorkoutPlanData } from '@//types/gym'
+import { WorkoutPlan, CreateWorkoutPlanData, Media } from '@//types/gym'
 import { db, type Category } from '@//lib/database'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -21,6 +21,11 @@ interface WorkoutStore {
   getWorkoutsByCategory: (category?: string) => WorkoutPlan[]
   getUniqueCategories: () => string[]
   isCategoryUsed: (categoryName: string) => boolean
+  // Media management
+  fileToMedia: (file: File) => Media
+  addMediaToWorkout: (workoutId: string, files: File[]) => Promise<void>
+  removeMediaFromWorkout: (workoutId: string, mediaId: string) => Promise<void>
+  updateWorkoutMedia: (workoutId: string, files: File[]) => Promise<void>
 }
 
 export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
@@ -36,7 +41,35 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
         .orderBy('createdAt')
         .reverse()
         .toArray()
-      set({ workouts, isLoading: false })
+
+      // Load media for each workout and recreate object URLs
+      const workoutsWithMedia = await Promise.all(
+        workouts.map(async (workout) => {
+          if (workout.media && workout.media.length > 0) {
+            const mediaWithUrls = await Promise.all(
+              workout.media.map(async (mediaRef) => {
+                try {
+                  const fullMedia = await db.media.get(mediaRef.id)
+                  if (fullMedia && fullMedia.blob) {
+                    return {
+                      ...fullMedia,
+                      url: URL.createObjectURL(fullMedia.blob),
+                    }
+                  }
+                  return mediaRef
+                } catch (error) {
+                  console.error('Failed to load media:', error)
+                  return mediaRef
+                }
+              })
+            )
+            return { ...workout, media: mediaWithUrls }
+          }
+          return workout
+        })
+      )
+
+      set({ workouts: workoutsWithMedia, isLoading: false })
     } catch (error) {
       set({ error: 'Failed to load workouts', isLoading: false })
     }
@@ -119,6 +152,18 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
         await get().addCategory(data.category.trim())
       }
 
+      // Process media files if any
+      const mediaItems = data.media
+        ? await Promise.all(
+            data.media.map(async (file) => {
+              const media = get().fileToMedia(file)
+              // Store in IndexedDB
+              await db.media.add(media)
+              return media
+            })
+          )
+        : []
+
       const now = new Date()
       const workout: WorkoutPlan = {
         id: uuidv4(),
@@ -133,7 +178,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
           weight: set.weight,
           notes: set.notes,
         })),
-        media: [],
+        media: mediaItems,
       }
 
       await db.workoutPlans.add(workout)
@@ -164,7 +209,24 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   deleteWorkout: async (id: string) => {
     set({ isLoading: true, error: null })
     try {
+      // Get the workout to access its media
+      const workout = get().workouts.find((w) => w.id === id)
+
+      if (workout && workout.media && workout.media.length > 0) {
+        // Delete all associated media from the database and revoke object URLs
+        await Promise.all(
+          workout.media.map(async (media) => {
+            // Revoke object URL to free memory
+            URL.revokeObjectURL(media.url)
+            // Delete from media database
+            await db.media.delete(media.id)
+          })
+        )
+      }
+
+      // Delete the workout from database
       await db.workoutPlans.delete(id)
+
       set((state) => ({
         workouts: state.workouts.filter((w) => w.id !== id),
         isLoading: false,
@@ -199,5 +261,112 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   isCategoryUsed: (categoryName: string) => {
     const { workouts } = get()
     return workouts.some((workout) => workout.category === categoryName)
+  },
+
+  // Helper method to convert File to Media
+  fileToMedia: (file: File): Media => {
+    const mediaId = uuidv4()
+    return {
+      id: mediaId,
+      type: file.type.startsWith('image/') ? 'photo' : 'video',
+      url: URL.createObjectURL(file),
+      blob: file,
+      name:
+        file.name ||
+        `${file.type.startsWith('image/') ? 'photo' : 'video'}-${Date.now()}`,
+      size: file.size,
+      createdAt: new Date(),
+    }
+  },
+
+  // Media management methods
+  addMediaToWorkout: async (workoutId: string, files: File[]) => {
+    try {
+      const workout = get().workouts.find((w) => w.id === workoutId)
+      if (!workout) return
+
+      const mediaItems = await Promise.all(
+        files.map(async (file) => {
+          const media = get().fileToMedia(file)
+
+          // Store in IndexedDB
+          await db.media.add(media)
+
+          return media
+        })
+      )
+
+      const updatedMedia = [...workout.media, ...mediaItems]
+      await db.workoutPlans.update(workoutId, { media: updatedMedia })
+
+      set((state) => ({
+        workouts: state.workouts.map((w) =>
+          w.id === workoutId ? { ...w, media: updatedMedia } : w
+        ),
+      }))
+    } catch (error) {
+      console.error('Failed to add media to workout:', error)
+    }
+  },
+
+  removeMediaFromWorkout: async (workoutId: string, mediaId: string) => {
+    try {
+      const workout = get().workouts.find((w) => w.id === workoutId)
+      if (!workout) return
+
+      // Get the media item to revoke its object URL
+      const mediaItem = workout.media.find((m) => m.id === mediaId)
+      if (mediaItem) {
+        URL.revokeObjectURL(mediaItem.url)
+      }
+
+      // Remove media from database
+      await db.media.delete(mediaId)
+
+      const updatedMedia = workout.media.filter((m) => m.id !== mediaId)
+      await db.workoutPlans.update(workoutId, { media: updatedMedia })
+
+      set((state) => ({
+        workouts: state.workouts.map((w) =>
+          w.id === workoutId ? { ...w, media: updatedMedia } : w
+        ),
+      }))
+    } catch (error) {
+      console.error('Failed to remove media from workout:', error)
+    }
+  },
+
+  updateWorkoutMedia: async (workoutId: string, files: File[]) => {
+    try {
+      const workout = get().workouts.find((w) => w.id === workoutId)
+      if (!workout) return
+
+      // Remove all existing media and revoke object URLs
+      await Promise.all(
+        workout.media.map(async (media) => {
+          URL.revokeObjectURL(media.url)
+          await db.media.delete(media.id)
+        })
+      )
+
+      // Add new media
+      const mediaItems = await Promise.all(
+        files.map(async (file) => {
+          const media = get().fileToMedia(file)
+          await db.media.add(media)
+          return media
+        })
+      )
+
+      await db.workoutPlans.update(workoutId, { media: mediaItems })
+
+      set((state) => ({
+        workouts: state.workouts.map((w) =>
+          w.id === workoutId ? { ...w, media: mediaItems } : w
+        ),
+      }))
+    } catch (error) {
+      console.error('Failed to update workout media:', error)
+    }
   },
 }))

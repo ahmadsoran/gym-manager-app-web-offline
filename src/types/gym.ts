@@ -21,7 +21,10 @@ export interface Set {
 export interface Media {
   id: string // UUID
   type: 'photo' | 'video'
-  url: string // IndexedDB reference
+  url: string // Object URL for display
+  blob: Blob // Actual file data
+  name: string // Original filename
+  size: number // File size in bytes
   createdAt: Date
 }
 
@@ -31,6 +34,7 @@ export interface CreateWorkoutPlanData {
   description?: string
   category?: string
   sets: CreateSetData[]
+  media?: File[]
 }
 
 export interface CreateSetData {

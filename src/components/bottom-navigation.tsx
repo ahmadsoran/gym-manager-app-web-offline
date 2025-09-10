@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { Link } from '@heroui/link'
 import { IconHome, IconList, IconPlus } from '@tabler/icons-react'
 import clsx from 'clsx'
+import { cn } from '@heroui/theme'
 
 const navigationItems = [
   {
@@ -51,7 +52,13 @@ export default function BottomNavigation() {
                   'hover:shadow-xl hover:shadow-primary/30 hover:scale-105 active:scale-95',
                   'backdrop-blur-sm bg-opacity-90'
                 )}>
-                <Icon size={24} className='text-white drop-shadow-sm' />
+                <Icon
+                  size={24}
+                  className={cn(
+                    'text-default-foreground/50 drop-shadow-sm',
+                    isActive && 'text-primary'
+                  )}
+                />
               </Link>
             )
           }

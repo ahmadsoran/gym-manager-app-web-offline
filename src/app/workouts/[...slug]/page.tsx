@@ -17,10 +17,13 @@ import {
   IconTrash,
   IconBarbell,
   IconCalendar,
+  IconCamera,
 } from '@tabler/icons-react'
 import { useWorkoutStore } from '@//store/workout-store'
 import { type CreateWorkoutPlanData, type CreateSetData } from '@//types/gym'
 import MobileHeader from '@//components/mobile-header'
+import CameraRecorder from '@//components/camera-recorder'
+import { PhotoView } from 'react-photo-view'
 
 export default function WorkoutPage() {
   const router = useRouter()
@@ -40,6 +43,8 @@ export default function WorkoutPage() {
     updateWorkout,
     deleteWorkout,
     getWorkoutById,
+    addMediaToWorkout,
+    removeMediaFromWorkout,
     isLoading,
     getUniqueCategories,
     loadWorkouts,
@@ -52,9 +57,14 @@ export default function WorkoutPage() {
     description: '',
     category: '',
     sets: [{ reps: 10, weight: undefined, notes: '' }],
+    media: [],
   })
 
   const [categoryInputValue, setCategoryInputValue] = useState('')
+  const [isCameraOpen, setIsCameraOpen] = useState(false)
+  const [mediaFiles, setMediaFiles] = useState<
+    Array<{ file: File; type: 'image' | 'video'; url: string }>
+  >([])
 
   useEffect(() => {
     loadWorkouts()
@@ -75,6 +85,8 @@ export default function WorkoutPage() {
             weight: set.weight,
             notes: set.notes || '',
           })),
+          // Note: We don't need to set media in formData for edit mode
+          // since we're using the workout.media directly from the store
         })
       }
     }
@@ -84,6 +96,23 @@ export default function WorkoutPage() {
   useEffect(() => {
     setCategoryInputValue(formData.category || '')
   }, [formData.category])
+
+  // Cleanup object URLs for local media files when component unmounts or when switching modes
+  useEffect(() => {
+    return () => {
+      mediaFiles.forEach((media) => URL.revokeObjectURL(media.url))
+    }
+  }, [])
+
+  // Clear local media files when switching to edit mode or details mode
+  useEffect(() => {
+    if (isEditMode || isDetailsMode) {
+      setMediaFiles((prev) => {
+        prev.forEach((media) => URL.revokeObjectURL(media.url))
+        return []
+      })
+    }
+  }, [isEditMode, isDetailsMode])
 
   const existingCategories = getUniqueCategories()
 
@@ -112,6 +141,43 @@ export default function WorkoutPage() {
       ...prev,
       sets: [...prev.sets, { reps: 10, weight: undefined, notes: '' }],
     }))
+  }
+
+  const handleMediaCapture = async (file: File, type: 'image' | 'video') => {
+    if (isEditMode && workoutId) {
+      // In edit mode, add to existing workout
+      await addMediaToWorkout(workoutId, [file])
+    } else {
+      // In add mode, add to local state
+      const url = URL.createObjectURL(file)
+      setMediaFiles((prev) => [...prev, { file, type, url }])
+      setFormData((prev) => ({
+        ...prev,
+        media: [...(prev.media || []), file],
+      }))
+    }
+  }
+
+  const removeMedia = async (index: number) => {
+    if (isEditMode && workoutId && workout) {
+      // In edit mode, remove from database
+      const mediaItem = workout.media[index]
+      if (mediaItem) {
+        await removeMediaFromWorkout(workoutId, mediaItem.id)
+      }
+    } else {
+      // In add mode, remove from local state
+      setMediaFiles((prev) => {
+        const updated = [...prev]
+        URL.revokeObjectURL(updated[index].url)
+        updated.splice(index, 1)
+        return updated
+      })
+      setFormData((prev) => ({
+        ...prev,
+        media: prev.media?.filter((_, i) => i !== index) || [],
+      }))
+    }
   }
 
   const removeSet = (index: number) => {
@@ -143,7 +209,9 @@ export default function WorkoutPage() {
         }))
 
         await updateWorkout(workoutId, {
-          ...formData,
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
           sets: updatedSets,
         })
       } else {
@@ -264,6 +332,58 @@ export default function WorkoutPage() {
               </div>
             </CardBody>
           </Card>
+
+          {/* Exercise Media */}
+          {workout.media && workout.media.length > 0 && (
+            <Card>
+              <CardHeader>
+                <h2 className='text-lg font-semibold'>Exercise Media</h2>
+              </CardHeader>
+              <CardBody className='space-y-4'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                  {workout.media.map((media, index) => (
+                    <div key={media.id} className='relative group'>
+                      {media.type === 'video' ? (
+                        <video
+                          src={media.url}
+                          className='w-full h-48 object-cover rounded-lg'
+                          controls
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                        />
+                      ) : (
+                        <PhotoView src={media.url}>
+                          <img
+                            src={media.url}
+                            alt='Exercise media'
+                            className='w-full h-48 object-cover rounded-lg'
+                          />
+                        </PhotoView>
+                      )}
+                      <div className='absolute top-2 left-2 flex gap-2'>
+                        <Chip
+                          size='sm'
+                          variant='solid'
+                          color='default'
+                          className='text-xs bg-black/70 text-white'>
+                          {media.type === 'video' ? 'Video' : 'Photo'}
+                        </Chip>
+                        <Chip
+                          size='sm'
+                          variant='solid'
+                          color='secondary'
+                          className='text-xs bg-black/70 text-white'>
+                          {(media.size / 1024 / 1024).toFixed(1)}MB
+                        </Chip>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Sets Details */}
           <Card>
@@ -442,6 +562,114 @@ export default function WorkoutPage() {
             </CardBody>
           </Card>
 
+          {/* Media Section */}
+          <Card>
+            <CardHeader className='flex justify-between items-center pb-3'>
+              <h2 className='text-lg font-semibold'>Exercise Media</h2>
+              {!isDetailsMode && (
+                <Button
+                  color='primary'
+                  variant='flat'
+                  size='sm'
+                  startContent={<IconCamera size={16} />}
+                  onPress={() => setIsCameraOpen(true)}>
+                  Add Media
+                </Button>
+              )}
+            </CardHeader>
+            <CardBody className='space-y-4'>
+              {(() => {
+                // Determine which media to display
+                const displayMedia =
+                  isEditMode || isDetailsMode
+                    ? workout?.media || []
+                    : mediaFiles
+
+                const hasMedia = displayMedia.length > 0
+
+                return hasMedia ? (
+                  <div className='grid grid-cols-2 gap-3'>
+                    {displayMedia.map((media, index) => {
+                      // Handle both Media objects (from database) and local media files
+                      const isStoredMedia = 'id' in media
+                      const mediaUrl = isStoredMedia ? media.url : media.url
+                      const mediaType = isStoredMedia ? media.type : media.type
+                      // Normalize media types: both 'video' and 'image'/'photo' should work
+                      const isVideo = mediaType === 'video'
+
+                      return (
+                        <div
+                          key={isStoredMedia ? media.id : index}
+                          className='relative group'>
+                          {isVideo ? (
+                            <video
+                              src={mediaUrl}
+                              className='w-full h-24 object-cover rounded-lg'
+                              controls={isDetailsMode ? true : false}
+                              autoPlay={isDetailsMode ? true : false}
+                              muted={isDetailsMode ? true : false}
+                              loop={isDetailsMode ? true : false}
+                              playsInline={isDetailsMode ? true : false}
+                            />
+                          ) : (
+                            <PhotoView src={mediaUrl}>
+                              <img
+                                src={mediaUrl}
+                                alt='Exercise media'
+                                className='w-full h-48 object-cover rounded-lg'
+                              />
+                            </PhotoView>
+                          )}
+                          {!isDetailsMode && (
+                            <Button
+                              isIconOnly
+                              size='sm'
+                              variant='solid'
+                              color='danger'
+                              className='absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity'
+                              onPress={() => removeMedia(index)}>
+                              <IconTrash size={12} />
+                            </Button>
+                          )}
+                          <div className='absolute bottom-1 left-1'>
+                            <Chip
+                              size='sm'
+                              variant='solid'
+                              color='default'
+                              className='text-xs'>
+                              {isVideo ? 'Video' : 'Photo'}
+                            </Chip>
+                          </div>
+                          {isStoredMedia && (
+                            <div className='absolute bottom-1 right-1'>
+                              <Chip
+                                size='sm'
+                                variant='solid'
+                                color='secondary'
+                                className='text-xs'>
+                                {(media.size / 1024 / 1024).toFixed(1)}MB
+                              </Chip>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className='text-center py-8 text-default-500'>
+                    <IconCamera size={48} className='mx-auto mb-4 opacity-50' />
+                    <p className='text-sm'>No media added yet</p>
+                    <p className='text-xs mt-1'>
+                      {isDetailsMode
+                        ? 'No media was captured for this workout'
+                        : 'Capture photos or videos of your exercises'}
+                    </p>
+                  </div>
+                )
+              })()}
+            </CardBody>
+          </Card>
+
           <Card>
             <CardHeader className='flex justify-between items-center pb-3'>
               <h2 className='text-lg font-semibold'>Sets</h2>
@@ -529,6 +757,13 @@ export default function WorkoutPage() {
           </Card>
         </form>
       </div>
+
+      {/* Camera Recorder Modal */}
+      <CameraRecorder
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onMediaCapture={handleMediaCapture}
+      />
     </>
   )
 }
