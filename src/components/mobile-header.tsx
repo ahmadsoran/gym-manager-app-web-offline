@@ -45,7 +45,7 @@ export default function MobileHeader({
               <IconArrowLeft size={20} />
             </Button>
           )}
-          <p className='text-lg font-semibold truncate'>{title}</p>
+          <p className='text-lg font-semibold truncate max-w-32'>{title}</p>
         </div>
 
         {/* Right Section */}

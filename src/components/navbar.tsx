@@ -10,7 +10,7 @@ import {
 import { Link } from '@heroui/link'
 import { IconBarbell, IconPlus, IconHome, IconList } from '@tabler/icons-react'
 import { ThemeSwitch } from './theme-switch'
-import { siteConfig } from '@//config/site'
+import { siteConfig } from '@/config/site'
 
 export default function Navbar() {
   return (

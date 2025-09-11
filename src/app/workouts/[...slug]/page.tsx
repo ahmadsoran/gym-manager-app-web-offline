@@ -21,16 +21,16 @@ import {
   IconCamera,
   IconLink,
 } from '@tabler/icons-react'
-import { useWorkoutStore } from '@//store/workout-store'
-import { type CreateWorkoutPlanData, type CreateSetData } from '@//types/gym'
-import MobileHeader from '@//components/mobile-header'
-import CameraRecorder from '@//components/camera-recorder'
+import { useWorkoutStore } from '@/store/workout-store'
+import { type CreateWorkoutPlanData, type CreateSetData } from '@/types/gym'
+import MobileHeader from '@/components/mobile-header'
+import CameraRecorder from '@/components/camera-recorder'
 import { PhotoView } from 'react-photo-view'
 import {
   fetchUrlMetadata,
   isValidUrl,
   type UrlMetadata,
-} from '@//lib/url-metadata-fetcher'
+} from '@/lib/url-metadata-fetcher'
 
 export default function WorkoutPage() {
   const router = useRouter()

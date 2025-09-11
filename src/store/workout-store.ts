@@ -1,13 +1,8 @@
 import { create } from 'zustand'
-import {
-  WorkoutPlan,
-  CreateWorkoutPlanData,
-  Media,
-  UrlLink,
-} from '@//types/gym'
-import { db, type Category } from '@//lib/database'
+import { WorkoutPlan, CreateWorkoutPlanData, Media, UrlLink } from '@/types/gym'
+import { db, type Category } from '@/lib/database'
 import { v4 as uuidv4 } from 'uuid'
-import { type UrlMetadata } from '@//lib/url-metadata-fetcher'
+import { type UrlMetadata } from '@/lib/url-metadata-fetcher'
 
 interface WorkoutStore {
   workouts: WorkoutPlan[]

@@ -49,7 +49,7 @@ export interface CreateWorkoutPlanData {
   category?: string
   sets: CreateSetData[]
   media?: File[]
-  urlLinks?: import('@//lib/url-metadata-fetcher').UrlMetadata[]
+  urlLinks?: import('@/lib/url-metadata-fetcher').UrlMetadata[]
 }
 
 export interface CreateSetData {

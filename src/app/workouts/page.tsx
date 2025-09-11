@@ -12,8 +12,8 @@ import {
   IconTrash,
   IconEye,
 } from '@tabler/icons-react'
-import { useWorkoutStore } from '@//store/workout-store'
-import MobileHeader from '@//components/mobile-header'
+import { useWorkoutStore } from '@/store/workout-store'
+import MobileHeader from '@/components/mobile-header'
 import { useEffect, useState } from 'react'
 import { Card, CardBody } from '@heroui/card'
 
