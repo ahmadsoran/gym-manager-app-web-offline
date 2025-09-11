@@ -20,7 +20,6 @@ export function AppShellStatus() {
     getCacheStats,
     preloadAppShell,
     clearCache,
-    checkOfflineCapability,
     formatSize,
     getCacheHealthScore,
   } = useAppShellCache()

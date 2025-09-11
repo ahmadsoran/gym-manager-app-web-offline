@@ -14,7 +14,7 @@ export const siteConfig = {
     },
     {
       label: 'Add Workout',
-      href: '/workouts/add',
+      href: '/workouts?action=add',
     },
   ],
   navMenuItems: [
@@ -28,7 +28,7 @@ export const siteConfig = {
     },
     {
       label: 'Add Workout',
-      href: '/workouts/add',
+      href: '/workouts?action=add',
     },
     {
       label: 'Settings',

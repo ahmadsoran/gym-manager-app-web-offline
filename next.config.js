@@ -1,10 +1,11 @@
-const withPWA = require('next-pwa')({
+import withPWA from 'next-pwa'
+
+const config = withPWA({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development', // Disable PWA in development
   register: true,
   skipWaiting: true,
   sw: 'sw.js',
-  buildExcludes: [/app-build-manifest\.json$/], // Exclude problematic build files
   fallbacks: {
     // Serve offline page for document requests when not cached
     document: '/offline',
@@ -100,4 +101,4 @@ const nextConfig = {
   },
 }
 
-module.exports = withPWA(nextConfig)
+export default config(nextConfig)
