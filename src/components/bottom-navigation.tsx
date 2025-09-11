@@ -19,7 +19,7 @@ const navigationItems = [
   },
   {
     label: 'Add',
-    href: '/workouts?action=add',
+    href: '/workouts?action=create',
     icon: IconPlus,
     isSpecial: true, // This will be the floating action button style
   },

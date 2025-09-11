@@ -54,7 +54,7 @@ export default function DashboardPage() {
         <div className='grid grid-cols-2 gap-3 mb-6'>
           <Button
             as={Link}
-            href='/workouts?action=add'
+            href='/workouts?action=create'
             color='primary'
             size='lg'
             className='h-20 flex-col gap-2'
@@ -117,7 +117,7 @@ export default function DashboardPage() {
                 <p className='text-default-500 mb-4 text-sm'>No workouts yet</p>
                 <Button
                   as={Link}
-                  href='/workouts?action=add'
+                  href='/workouts?action=create'
                   color='primary'
                   size='sm'
                   startContent={<IconPlus size={16} />}>

@@ -34,7 +34,9 @@ export default function Navbar() {
                 href={item.href}>
                 {item.href === '/' && <IconHome size={18} />}
                 {item.href === '/workouts' && <IconList size={18} />}
-                {item.href === '/workouts?action=add' && <IconPlus size={18} />}
+                {item.href === '/workouts?action=create' && (
+                  <IconPlus size={18} />
+                )}
                 {item.label}
               </Link>
             </NavbarItem>
@@ -66,7 +68,9 @@ export default function Navbar() {
                 size='lg'>
                 {item.href === '/' && <IconHome size={20} />}
                 {item.href === '/workouts' && <IconList size={20} />}
-                {item.href === '/workouts?action=add' && <IconPlus size={20} />}
+                {item.href === '/workouts?action=create' && (
+                  <IconPlus size={20} />
+                )}
                 {item.label}
               </Link>
             </NavbarMenuItem>
