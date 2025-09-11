@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   creator: 'Workout Manager',
   publisher: 'Workout Manager',
   alternates: {
-    canonical: process.env.NEXT_PUBLIC_BASE_URL || 'https://localhost:3000',
+    canonical: 'https://workout-manager-app.ahemdsoran.dev',
   },
   manifest: '/manifest.json',
   appleWebApp: {
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
       template: `%s - ${siteConfig.name}`,
     },
     description: siteConfig.description,
-    url: process.env.NEXT_PUBLIC_BASE_URL || 'https://localhost:3000',
+    url: 'https://workout-manager-app.ahemdsoran.dev',
     images: [
       {
         url: '/icons/icon-512x512.png',

@@ -81,7 +81,7 @@
       "name": "Add Workout",
       "short_name": "Add",
       "description": "Quickly add a new workout",
-      "url": "/workouts/add",
+      "url": "/workouts?action=add",
       "icons": [
         {
           "src": "/icons/add-shortcut.png",

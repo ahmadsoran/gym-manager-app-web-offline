@@ -13,6 +13,7 @@ import {
 } from '@tabler/icons-react'
 import { useWorkoutStore } from '@/store/workout-store'
 import MobileHeader from '@/components/mobile-header'
+import { addToast } from '@heroui/toast'
 
 export default function DashboardPage() {
   const {
@@ -53,7 +54,7 @@ export default function DashboardPage() {
         <div className='grid grid-cols-2 gap-3 mb-6'>
           <Button
             as={Link}
-            href='/workouts/add'
+            href='/workouts?action=add'
             color='primary'
             size='lg'
             className='h-20 flex-col gap-2'
@@ -116,7 +117,7 @@ export default function DashboardPage() {
                 <p className='text-default-500 mb-4 text-sm'>No workouts yet</p>
                 <Button
                   as={Link}
-                  href='/workouts/add'
+                  href='/workouts?action=add'
                   color='primary'
                   size='sm'
                   startContent={<IconPlus size={16} />}>
@@ -192,7 +193,10 @@ export default function DashboardPage() {
                           try {
                             await deleteCategory(category)
                           } catch (error) {
-                            alert('Failed to delete category.')
+                            addToast({
+                              title: 'Failed to delete category',
+                              color: 'danger',
+                            })
                           }
                         }}>
                         <IconTrash size={12} />
