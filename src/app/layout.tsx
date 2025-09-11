@@ -3,12 +3,12 @@ import { Metadata, Viewport } from 'next'
 import clsx from 'clsx'
 
 import { Providers } from './providers'
-import BottomNavigation from '@//components/bottom-navigation'
-import PWAManager from '@//components/pwa-manager'
-import Footer from '@//components/footer'
+import BottomNavigation from '@/components/bottom-navigation'
+import PWAManager from '@/components/pwa-manager'
+import Footer from '@/components/footer'
 
-import { siteConfig } from '@//config/site'
-import { fontSans } from '@//config/fonts'
+import { siteConfig } from '@/config/site'
+import { fontSans } from '@/config/fonts'
 
 export const metadata: Metadata = {
   title: {

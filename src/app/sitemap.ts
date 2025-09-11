@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { db } from '@//lib/database'
+import { db } from '@/lib/database'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://workout-manager-app.ahmedsoran.dev'

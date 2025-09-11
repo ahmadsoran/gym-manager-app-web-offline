@@ -11,8 +11,8 @@ import {
   IconTrendingUp,
   IconTrash,
 } from '@tabler/icons-react'
-import { useWorkoutStore } from '@//store/workout-store'
-import MobileHeader from '@//components/mobile-header'
+import { useWorkoutStore } from '@/store/workout-store'
+import MobileHeader from '@/components/mobile-header'
 
 export default function DashboardPage() {
   const {

@@ -1,6 +1,5 @@
 'use client'
-
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Button } from '@heroui/button'
 import {
   Modal,
@@ -10,7 +9,7 @@ import {
   ModalFooter,
 } from '@heroui/modal'
 import { IconDownload } from '@tabler/icons-react'
-import OfflineIndicator from './offline-indicator'
+import { usePWAStore } from '@//store/pwa-store'
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -22,20 +21,32 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PWAManager() {
-  const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null)
-  const [showInstallModal, setShowInstallModal] = useState(false)
-  const [isInstalled, setIsInstalled] = useState(false)
+  const {
+    installPrompt,
+    isInstalled,
+    isDismissed,
+    showInstallModal,
+    setInstallPrompt,
+    setIsInstalled,
+    setShowInstallModal,
+    dismissInstall,
+  } = usePWAStore()
 
   useEffect(() => {
     // Check if app is already installed
-    setIsInstalled(window.matchMedia('(display-mode: standalone)').matches)
+    const checkInstalled = window.matchMedia(
+      '(display-mode: standalone)'
+    ).matches
+    setIsInstalled(checkInstalled)
 
     // Handle PWA install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
-      setInstallPrompt(e as BeforeInstallPromptEvent)
-      if (!isInstalled) {
+      const promptEvent = e as BeforeInstallPromptEvent
+      setInstallPrompt(promptEvent)
+
+      // Only show modal if not installed and not dismissed
+      if (!checkInstalled && !isDismissed) {
         setShowInstallModal(true)
       }
     }
@@ -57,7 +68,7 @@ export default function PWAManager() {
       )
       window.removeEventListener('appinstalled', handleAppInstalled)
     }
-  }, [isInstalled])
+  }, [isDismissed, setInstallPrompt, setIsInstalled, setShowInstallModal])
 
   const handleInstallClick = async () => {
     if (!installPrompt) return
@@ -77,33 +88,20 @@ export default function PWAManager() {
     }
   }
 
-  const dismissInstallModal = () => {
-    setShowInstallModal(false)
-    // Show again after 24 hours
-    localStorage.setItem('pwa-install-dismissed', Date.now().toString())
+  const handleDismiss = () => {
+    dismissInstall()
   }
 
-  // Don't show install modal if dismissed recently
-  useEffect(() => {
-    const dismissed = localStorage.getItem('pwa-install-dismissed')
-    if (dismissed) {
-      const dismissedTime = parseInt(dismissed)
-      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
-      if (dismissedTime > oneDayAgo) {
-        setShowInstallModal(false)
-      }
-    }
-  }, [])
+  if (isInstalled && !showInstallModal) {
+    return null
+  }
 
   return (
     <>
-      {/* Offline Status Indicator */}
-      <OfflineIndicator />
-
       {/* Install PWA Modal */}
       <Modal
         isOpen={showInstallModal && !!installPrompt && !isInstalled}
-        onClose={dismissInstallModal}
+        onClose={handleDismiss}
         placement='bottom'
         backdrop='blur'>
         <ModalContent>
@@ -139,7 +137,7 @@ export default function PWAManager() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant='light' onPress={dismissInstallModal}>
+            <Button variant='light' onPress={handleDismiss}>
               Maybe Later
             </Button>
             <Button color='primary' onPress={handleInstallClick}>

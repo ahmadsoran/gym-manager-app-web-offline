@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie'
-import { WorkoutPlan, Media } from '@//types/gym'
+import { WorkoutPlan, Media } from '@/types/gym'
 
 interface Category {
   id: string
