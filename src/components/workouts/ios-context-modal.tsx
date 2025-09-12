@@ -71,7 +71,7 @@ export default function IosContextModal({
           {/* Modal Content */}
           <motion.div
             ref={modalRef}
-            className='fixed z-50 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-sm'
+            className='fixed z-50 rounded-2xl shadow-2xl overflow-hidden'
             initial={
               initialRect
                 ? {
