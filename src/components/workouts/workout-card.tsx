@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardBody } from '@heroui/card'
 import { Button, ButtonGroup } from '@heroui/button'
 import { Chip } from '@heroui/chip'
-import { motion, PanInfo } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { IconBarbell, IconEdit, IconEye, IconTrash } from '@tabler/icons-react'
 import { useIosContextMenu } from '@/hooks/use-ios-context-menu'
 import IosContextModal from './ios-context-modal'
@@ -22,6 +22,9 @@ export default function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
   const [cardRect, setCardRect] = useState<DOMRect | null>(null)
   const [dragX, setDragX] = useState(0)
   const [isSwipeActionsVisible, setIsSwipeActionsVisible] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const [currentX, setCurrentX] = useState(0)
 
   const { isPressed, isLongPressed, cardRef, handlers, resetPress } =
     useIosContextMenu({
@@ -44,29 +47,127 @@ export default function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only handle regular clicks if not in long press mode and no swipe actions
-    if (!isLongPressed && !isPressed && !isSwipeActionsVisible) {
+    if (!isLongPressed && !isPressed && !isSwipeActionsVisible && !isDragging) {
       e.preventDefault()
       router.push(`/workouts?action=view&id=${workout.id}`)
     }
   }
 
-  const handleDragEnd = (
-    event: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    const rightSwipeThreshold = 180
-    const leftSwipeThreshold = 180
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isLongPressed) return
+    setIsDragging(true)
+    setStartX(e.touches[0].clientX)
+    setCurrentX(e.touches[0].clientX)
+  }
 
-    if (info.offset.x > rightSwipeThreshold) {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Call the original iOS context menu handler first
+    handlers.onPointerDown(e)
+
+    // Then handle drag if not a touch event
+    if (isLongPressed || e.pointerType === 'touch') return
+    setIsDragging(true)
+    setStartX(e.clientX)
+    setCurrentX(e.clientX)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || isLongPressed) return
+    e.preventDefault()
+    const touch = e.touches[0]
+    setCurrentX(touch.clientX)
+    const diffX = touch.clientX - startX
+
+    // Block drag when reaching the action button limits
+    const maxRightDrag = 80
+    const maxLeftDrag = -160
+
+    const constrainedDragX = Math.max(
+      maxLeftDrag,
+      Math.min(maxRightDrag, diffX)
+    )
+    setDragX(constrainedDragX)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    // Call the original iOS context menu handler first
+    handlers.onPointerMove(e)
+
+    // Then handle drag if not a touch event
+    if (!isDragging || isLongPressed || e.pointerType === 'touch') return
+    e.preventDefault()
+    setCurrentX(e.clientX)
+    const diffX = e.clientX - startX
+
+    // Block drag when reaching the action button limits
+    const maxRightDrag = 80
+    const maxLeftDrag = -160
+
+    const constrainedDragX = Math.max(
+      maxLeftDrag,
+      Math.min(maxRightDrag, diffX)
+    )
+    setDragX(constrainedDragX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return
+    setIsDragging(false)
+
+    const diffX = currentX - startX
+    const rightSwipeThreshold = 40
+    const leftSwipeThreshold = 40
+
+    if (diffX > rightSwipeThreshold) {
       // Swiped right more than 40px - snap to 80px to show left action button
       setDragX(80)
       setIsSwipeActionsVisible(true)
-    } else if (info.offset.x < -leftSwipeThreshold) {
+    } else if (diffX < -leftSwipeThreshold) {
       // Swiped left more than 40px - snap to -160px to show right action buttons
       setDragX(-160)
       setIsSwipeActionsVisible(true)
     } else {
       // Return to origin
+      setDragX(0)
+      setIsSwipeActionsVisible(false)
+    }
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    // Call the original iOS context menu handler first
+    handlers.onPointerUp()
+
+    // Then handle drag if not a touch event
+    if (!isDragging || e.pointerType === 'touch') return
+    setIsDragging(false)
+
+    const diffX = currentX - startX
+    const rightSwipeThreshold = 40
+    const leftSwipeThreshold = 40
+
+    if (diffX > rightSwipeThreshold) {
+      // Swiped right more than 40px - snap to 80px to show left action button
+      setDragX(80)
+      setIsSwipeActionsVisible(true)
+    } else if (diffX < -leftSwipeThreshold) {
+      // Swiped left more than 40px - snap to -160px to show right action buttons
+      setDragX(-160)
+      setIsSwipeActionsVisible(true)
+    } else {
+      // Return to origin
+      setDragX(0)
+      setIsSwipeActionsVisible(false)
+    }
+  }
+
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    // Call the original iOS context menu handler first
+    handlers.onPointerLeave()
+
+    // Reset drag state if dragging
+    if (isDragging && e.pointerType !== 'touch') {
+      setIsDragging(false)
       setDragX(0)
       setIsSwipeActionsVisible(false)
     }
@@ -139,19 +240,18 @@ export default function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
             opacity: isLongPressed ? 0.8 : 1,
             x: dragX,
           }}
-          drag='x'
-          dragConstraints={{ left: 0, right: 0 }}
-          dragDirectionLock
-          dragMomentum={false}
-          dragElastic={0.2}
-          dragSnapToOrigin
-          onDragEnd={handleDragEnd}
           transition={{
             type: 'tween',
             duration: 0.2,
           }}
           className='touch-none select-none relative z-10'
-          {...handlers}>
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerLeave}>
           <Card
             className={`
             hover:shadow-md transition-all duration-200 cursor-pointer
