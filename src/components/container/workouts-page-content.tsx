@@ -15,7 +15,7 @@ import { useWorkoutStore } from '@/store/workout-store'
 import MobileHeader from '@/components/mobile-header'
 import AddWorkout from '@/components/workouts/add-workout'
 import ViewWorkout from '@/components/workouts/view-workout'
-import WorkoutCard from '@/components/workouts/workout-card'
+import SwipeableWorkoutCard from '@/components/workouts/swipeable-workout-card'
 import { addToast, closeAll } from '@heroui/toast'
 
 export default function WorkoutContainer() {
@@ -238,15 +238,19 @@ export default function WorkoutContainer() {
             )}
           </div>
         ) : (
-          <div className='space-y-3'>
-            {filteredWorkouts.map((workout) => (
-              <WorkoutCard
-                key={workout.id}
-                workout={workout}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
+          filteredWorkouts.map((workout) => (
+            <SwipeableWorkoutCard
+              key={workout.id}
+              workout={workout}
+              onDelete={handleDelete}
+              onEdit={() =>
+                router.push(`/workouts?action=edit&id=${workout.id}`)
+              }
+              onView={() =>
+                router.push(`/workouts?action=view&id=${workout.id}`)
+              }
+            />
+          ))
         )}
       </div>
     </>
