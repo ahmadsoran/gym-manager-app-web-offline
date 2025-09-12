@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardBody } from '@heroui/card'
-import { Button } from '@heroui/button'
+import { Button, ButtonGroup } from '@heroui/button'
 import { Chip } from '@heroui/chip'
-import { motion } from 'framer-motion'
-import { IconBarbell, IconEye, IconEdit, IconTrash } from '@tabler/icons-react'
+import { motion, PanInfo } from 'framer-motion'
+import { IconBarbell, IconEdit, IconEye, IconTrash } from '@tabler/icons-react'
 import { useIosContextMenu } from '@/hooks/use-ios-context-menu'
 import IosContextModal from './ios-context-modal'
 import type { WorkoutPlan } from '@/types/gym'
@@ -20,6 +20,8 @@ export default function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [cardRect, setCardRect] = useState<DOMRect | null>(null)
+  const [dragX, setDragX] = useState(0)
+  const [isSwipeActionsVisible, setIsSwipeActionsVisible] = useState(false)
 
   const { isPressed, isLongPressed, cardRef, handlers, resetPress } =
     useIosContextMenu({
@@ -41,133 +43,184 @@ export default function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
   }
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Only handle regular clicks if not in long press mode
-    if (!isLongPressed && !isPressed) {
+    // Only handle regular clicks if not in long press mode and no swipe actions
+    if (!isLongPressed && !isPressed && !isSwipeActionsVisible) {
       e.preventDefault()
       router.push(`/workouts?action=view&id=${workout.id}`)
     }
   }
 
+  const handleDragEnd = (
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
+    const rightSwipeThreshold = 180
+    const leftSwipeThreshold = 180
+
+    if (info.offset.x > rightSwipeThreshold) {
+      // Swiped right more than 40px - snap to 80px to show left action button
+      setDragX(80)
+      setIsSwipeActionsVisible(true)
+    } else if (info.offset.x < -leftSwipeThreshold) {
+      // Swiped left more than 40px - snap to -160px to show right action buttons
+      setDragX(-160)
+      setIsSwipeActionsVisible(true)
+    } else {
+      // Return to origin
+      setDragX(0)
+      setIsSwipeActionsVisible(false)
+    }
+  }
+
+  const handleEdit = () => {
+    router.push(`/workouts?action=edit&id=${workout.id}`)
+    setDragX(0)
+    setIsSwipeActionsVisible(false)
+  }
+
+  const handleDelete = () => {
+    onDelete(workout.id)
+    setDragX(0)
+    setIsSwipeActionsVisible(false)
+  }
+
+  const handleView = () => {
+    router.push(`/workouts?action=view&id=${workout.id}`)
+    setDragX(0)
+    setIsSwipeActionsVisible(false)
+  }
+
   return (
     <>
-      <motion.div
-        ref={cardRef}
-        animate={{
-          scale: isPressed ? 0.98 : 1,
-          opacity: isLongPressed ? 0.8 : 1,
-        }}
-        transition={{
-          type: 'spring',
-          damping: 20,
-          stiffness: 300,
-        }}
-        className='touch-none select-none'
-        {...handlers}>
-        <Card
-          className={`
+      <div className='relative overflow-hidden'>
+        {/* Swipe Actions Background */}
+        <div className='absolute left-0 top-0 bottom-0 flex items-center scale-90'>
+          <Button
+            isIconOnly
+            size='sm'
+            variant='flat'
+            color='primary'
+            className='h-full w-20'
+            onPress={handleView}
+            aria-label='View workout'>
+            <IconEye size={16} />
+          </Button>
+        </div>
+        <div className='absolute right-0 top-0 bottom-0 flex items-center scale-90'>
+          <ButtonGroup className='h-full'>
+            <Button
+              isIconOnly
+              size='sm'
+              variant='flat'
+              color='primary'
+              className='h-full w-20'
+              onPress={handleEdit}
+              aria-label='Edit workout'>
+              <IconEdit size={16} />
+            </Button>
+            <Button
+              isIconOnly
+              size='sm'
+              variant='flat'
+              color='danger'
+              className='h-full w-20'
+              onPress={handleDelete}
+              aria-label='Delete workout'>
+              <IconTrash size={16} />
+            </Button>
+          </ButtonGroup>
+        </div>
+
+        {/* Main Card */}
+        <motion.div
+          ref={cardRef}
+          animate={{
+            scale: isPressed ? 0.98 : 1,
+            opacity: isLongPressed ? 0.8 : 1,
+            x: dragX,
+          }}
+          drag='x'
+          dragConstraints={{ left: 0, right: 0 }}
+          dragDirectionLock
+          dragMomentum={false}
+          dragElastic={0.2}
+          dragSnapToOrigin
+          onDragEnd={handleDragEnd}
+          transition={{
+            type: 'tween',
+            duration: 0.2,
+          }}
+          className='touch-none select-none relative z-10'
+          {...handlers}>
+          <Card
+            className={`
             hover:shadow-md transition-all duration-200 cursor-pointer
             ${isPressed ? 'shadow-lg' : ''}
             ${isLongPressed ? 'pointer-events-none' : ''}
           `}
-          onClick={handleCardClick}>
-          <CardBody className='p-4'>
-            <div className='flex items-start justify-between mb-3'>
-              <div className='flex-1 min-w-0'>
-                <h3 className='font-semibold text-base line-clamp-1 mb-1'>
-                  {workout.title}
-                </h3>
-                {workout.description && (
-                  <p className='text-sm text-default-500 line-clamp-2'>
-                    {workout.description}
-                  </p>
-                )}
-              </div>
-              {workout.category && (
-                <Chip
-                  size='sm'
-                  variant='flat'
-                  color='primary'
-                  className='ml-2 shrink-0'>
-                  {workout.category}
-                </Chip>
-              )}
-            </div>
-
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center gap-4 text-sm text-default-600'>
-                <div className='flex items-center gap-1'>
-                  <IconBarbell size={16} />
-                  <span>{workout.sets.length} sets</span>
-                </div>
-                <div className='text-xs text-default-400'>
-                  {new Date(workout.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: '2-digit',
-                  })}
-                </div>
-              </div>
-
-              <div className='flex gap-1' onClick={(e) => e.stopPropagation()}>
-                <Button
-                  onPress={() =>
-                    router.push(`/workouts?action=view&id=${workout.id}`)
-                  }
-                  isIconOnly
-                  size='sm'
-                  radius='full'
-                  variant='shadow'
-                  color='default'
-                  aria-label='View workout details'>
-                  <IconEye size={14} />
-                </Button>
-                <Button
-                  onPress={() =>
-                    router.push(`/workouts?action=edit&id=${workout.id}`)
-                  }
-                  isIconOnly
-                  size='sm'
-                  radius='full'
-                  variant='shadow'
-                  color='primary'
-                  aria-label='Edit workout'>
-                  <IconEdit size={14} />
-                </Button>
-                <Button
-                  isIconOnly
-                  size='sm'
-                  variant='shadow'
-                  radius='full'
-                  color='danger'
-                  aria-label='Delete workout'
-                  onPress={() => onDelete(workout.id)}>
-                  <IconTrash size={14} />
-                </Button>
-              </div>
-            </div>
-
-            {/* Sets Preview */}
-            {workout.sets.length > 0 && (
-              <div className='mt-3 pt-3 border-t border-default-100'>
-                <div className='flex flex-wrap gap-1'>
-                  {workout.sets.slice(0, 3).map((set, index) => (
-                    <span
-                      key={set.id}
-                      className='text-xs bg-default-100 text-default-600 px-2 py-1 rounded-md'>
-                      {set.reps}r{set.weight ? ` × ${set.weight}kg` : ''}
-                    </span>
-                  ))}
-                  {workout.sets.length > 3 && (
-                    <span className='text-xs text-default-400 px-2 py-1'>
-                      +{workout.sets.length - 3} more
-                    </span>
+            onClick={handleCardClick}>
+            <CardBody className='p-4'>
+              <div className='flex items-start justify-between mb-3'>
+                <div className='flex-1 min-w-0'>
+                  <h3 className='font-semibold text-base line-clamp-1 mb-1'>
+                    {workout.title}
+                  </h3>
+                  {workout.description && (
+                    <p className='text-sm text-default-500 line-clamp-2'>
+                      {workout.description}
+                    </p>
                   )}
                 </div>
+                {workout.category && (
+                  <Chip
+                    size='sm'
+                    variant='flat'
+                    color='primary'
+                    className='ml-2 shrink-0'>
+                    {workout.category}
+                  </Chip>
+                )}
               </div>
-            )}
-          </CardBody>
-        </Card>
-      </motion.div>
+
+              <div className='flex items-center justify-between'>
+                <div className='flex items-center gap-4 text-sm text-default-600'>
+                  <div className='flex items-center gap-1'>
+                    <IconBarbell size={16} />
+                    <span>{workout.sets.length} sets</span>
+                  </div>
+                  <div className='text-xs text-default-400'>
+                    {new Date(workout.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: '2-digit',
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sets Preview */}
+              {workout.sets.length > 0 && (
+                <div className='mt-3 pt-3 border-t border-default-100'>
+                  <div className='flex flex-wrap gap-1'>
+                    {workout.sets.slice(0, 3).map((set, index) => (
+                      <span
+                        key={set.id}
+                        className='text-xs bg-default-100 text-default-600 px-2 py-1 rounded-md'>
+                        {set.reps}r{set.weight ? ` × ${set.weight}kg` : ''}
+                      </span>
+                    ))}
+                    {workout.sets.length > 3 && (
+                      <span className='text-xs text-default-400 px-2 py-1'>
+                        +{workout.sets.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </motion.div>
+      </div>
 
       {/* iOS Context Modal */}
       <IosContextModal

@@ -107,7 +107,8 @@ export default function IosContextModal({
                     top: initialRect.top,
                     width: initialRect.width,
                     height: initialRect.height,
-                    scale: 1,
+                    scale: 0.95,
+                    opacity: 0,
                   }
                 : {
                     scale: 0.8,
