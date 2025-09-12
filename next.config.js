@@ -29,7 +29,7 @@ const config = withPWA({
     },
     // Static Assets - JS, CSS, Fonts
     {
-      urlPattern: /\.(?:js|css|woff|woff2|ttf|eot)$/i,
+      urlPattern: /\.(?:js|css|html|woff|woff2|ttf|eot|json|txt)$/i,
       handler: 'CacheFirst',
       options: {
         cacheName: 'static-assets',
@@ -39,6 +39,7 @@ const config = withPWA({
         },
       },
     },
+
     // Images and Icons
     {
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,

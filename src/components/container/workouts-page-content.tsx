@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, CardBody } from '@heroui/card'
 import { Button } from '@heroui/button'
 import { Input } from '@heroui/input'
 import { Chip } from '@heroui/chip'
@@ -10,18 +9,16 @@ import {
   IconSearch,
   IconPlus,
   IconBarbell,
-  IconEye,
-  IconEdit,
-  IconTrash,
   IconDeviceFloppy,
 } from '@tabler/icons-react'
 import { useWorkoutStore } from '@/store/workout-store'
 import MobileHeader from '@/components/mobile-header'
 import AddWorkout from '@/components/workouts/add-workout'
 import ViewWorkout from '@/components/workouts/view-workout'
+import WorkoutCard from '@/components/workouts/workout-card'
 import { addToast, closeAll } from '@heroui/toast'
 
-export default function WorkoutsPageContent() {
+export default function WorkoutContainer() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -243,109 +240,11 @@ export default function WorkoutsPageContent() {
         ) : (
           <div className='space-y-3'>
             {filteredWorkouts.map((workout) => (
-              <Card
+              <WorkoutCard
                 key={workout.id}
-                className='hover:shadow-md transition-all duration-200 active:scale-98'>
-                <CardBody className='p-4'>
-                  <div className='flex items-start justify-between mb-3'>
-                    <div className='flex-1 min-w-0'>
-                      <h3 className='font-semibold text-base line-clamp-1 mb-1'>
-                        {workout.title}
-                      </h3>
-                      {workout.description && (
-                        <p className='text-sm text-default-500 line-clamp-2'>
-                          {workout.description}
-                        </p>
-                      )}
-                    </div>
-                    {workout.category && (
-                      <Chip
-                        size='sm'
-                        variant='flat'
-                        color='primary'
-                        className='ml-2 shrink-0'>
-                        {workout.category}
-                      </Chip>
-                    )}
-                  </div>
-
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center gap-4 text-sm text-default-600'>
-                      <div className='flex items-center gap-1'>
-                        <IconBarbell size={16} />
-                        <span>{workout.sets.length} sets</span>
-                      </div>
-                      <div className='text-xs text-default-400'>
-                        {new Date(workout.createdAt).toLocaleDateString(
-                          'en-US',
-                          {
-                            month: 'short',
-                            day: 'numeric',
-                            year: '2-digit',
-                          }
-                        )}
-                      </div>
-                    </div>
-
-                    <div className='flex gap-1'>
-                      <Button
-                        onPress={() =>
-                          router.push(`/workouts?action=view&id=${workout.id}`)
-                        }
-                        isIconOnly
-                        size='sm'
-                        radius='full'
-                        variant='shadow'
-                        color='default'
-                        aria-label='View workout details'>
-                        <IconEye size={14} />
-                      </Button>
-                      <Button
-                        onPress={() =>
-                          router.push(`/workouts?action=edit&id=${workout.id}`)
-                        }
-                        isIconOnly
-                        size='sm'
-                        radius='full'
-                        variant='shadow'
-                        color='primary'
-                        aria-label='Edit workout'>
-                        <IconEdit size={14} />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        size='sm'
-                        variant='shadow'
-                        radius='full'
-                        color='danger'
-                        aria-label='Delete workout'
-                        onPress={() => handleDelete(workout.id)}>
-                        <IconTrash size={14} />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Sets Preview */}
-                  {workout.sets.length > 0 && (
-                    <div className='mt-3 pt-3 border-t border-default-100'>
-                      <div className='flex flex-wrap gap-1'>
-                        {workout.sets.slice(0, 3).map((set, index) => (
-                          <span
-                            key={set.id}
-                            className='text-xs bg-default-100 text-default-600 px-2 py-1 rounded-md'>
-                            {set.reps}r{set.weight ? ` × ${set.weight}kg` : ''}
-                          </span>
-                        ))}
-                        {workout.sets.length > 3 && (
-                          <span className='text-xs text-default-400 px-2 py-1'>
-                            +{workout.sets.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardBody>
-              </Card>
+                workout={workout}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         )}
