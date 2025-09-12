@@ -7,8 +7,6 @@ const config = withPWA({
   skipWaiting: true,
   sw: 'sw.js',
   fallbacks: {
-    // Serve offline page for document requests when not cached
-    document: '/offline',
     image: '/icons/icon-192x192.png',
     audio: null,
     video: null,

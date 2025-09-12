@@ -5,12 +5,7 @@ import { Button } from '@heroui/button'
 import { Input } from '@heroui/input'
 import { Chip } from '@heroui/chip'
 import { Spinner } from '@heroui/spinner'
-import {
-  IconSearch,
-  IconPlus,
-  IconBarbell,
-  IconDeviceFloppy,
-} from '@tabler/icons-react'
+import { IconSearch, IconPlus, IconBarbell } from '@tabler/icons-react'
 import { useWorkoutStore } from '@/store/workout-store'
 import MobileHeader from '@/components/mobile-header'
 import AddWorkout from '@/components/workouts/add-workout'
@@ -103,24 +98,8 @@ export default function WorkoutContainer() {
     const editWorkout =
       isEditMode && workoutId ? getWorkoutById(workoutId) : null
 
-    const headerActions = (
-      <Button
-        type='submit'
-        color='primary'
-        size='sm'
-        form='workout-form'
-        startContent={<IconDeviceFloppy size={16} />}>
-        {isEditMode ? 'Update' : 'Save'}
-      </Button>
-    )
-
     return (
       <>
-        <MobileHeader
-          title={isEditMode ? 'Edit Workout' : 'Add Workout'}
-          showBack={true}
-          actions={headerActions}
-        />
         <AddWorkout editWorkout={editWorkout} isEditMode={!!isEditMode} />
       </>
     )

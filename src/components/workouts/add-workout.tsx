@@ -24,6 +24,7 @@ import CameraRecorder from '@//components/camera-recorder'
 import { PhotoView } from 'react-photo-view'
 import { fetchUrlMetadata, isValidUrl } from '@//lib/url-metadata-fetcher'
 import { addToast } from '@heroui/toast'
+import MobileHeader from '../mobile-header'
 
 interface AddWorkoutProps {
   editWorkout?: WorkoutPlan | null
@@ -242,6 +243,7 @@ export default function AddWorkout({
     }
   }
 
+  const [isSubmitting, setSubmitting] = useState(false)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -251,6 +253,7 @@ export default function AddWorkout({
     }
 
     try {
+      setSubmitting(true)
       if (isEditMode && editWorkout) {
         // For updates, we need to transform sets to include IDs
         const updatedSets = formData.sets.map((set, index) => ({
@@ -287,6 +290,7 @@ export default function AddWorkout({
         await addWorkout(formData)
         addToast({ title: 'Workout saved successfully', color: 'success' })
       }
+      setSubmitting(false)
 
       router.push('/workouts')
     } catch (error) {
@@ -296,6 +300,7 @@ export default function AddWorkout({
           : 'Failed to save workout. Please try again.',
         color: 'danger',
       })
+      setSubmitting(false)
     }
   }
 
@@ -304,6 +309,21 @@ export default function AddWorkout({
   return (
     <div className='p-4 pb-32 space-y-6'>
       <form id='workout-form' onSubmit={handleSubmit} className='space-y-6'>
+        <MobileHeader
+          title={isEditMode ? 'Edit Workout' : 'Add Workout'}
+          showBack={true}
+          actions={
+            <Button
+              type='submit'
+              color='primary'
+              size='sm'
+              isLoading={isSubmitting}
+              form='workout-form'
+              startContent={<IconDeviceFloppy size={16} />}>
+              {isEditMode ? 'Update' : 'Save'}
+            </Button>
+          }
+        />
         <Card>
           <CardHeader className='pb-3'>
             <h2 className='text-lg font-semibold'>

@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import { Button } from '@heroui/button'
 import { IconX } from '@tabler/icons-react'
 import ViewWorkout from '@/components/workouts/view-workout'
+import { ScrollShadow } from '@heroui/scroll-shadow'
 
 interface IosContextModalProps {
   isOpen: boolean
@@ -71,7 +72,7 @@ export default function IosContextModal({
           {/* Modal Content */}
           <motion.div
             ref={modalRef}
-            className='fixed z-50 rounded-2xl shadow-2xl overflow-hidden'
+            className='fixed z-50 rounded-2xl p-0 overflow-hidden'
             initial={
               initialRect
                 ? {
@@ -122,20 +123,21 @@ export default function IosContextModal({
               duration: 0.4,
             }}>
             {/* Close Button */}
-            <div className='absolute top-4 right-4 z-10'>
+            <div className='absolute top-4 right-4 z-50'>
               <Button
                 isIconOnly
                 size='sm'
-                variant='solid'
-                color='default'
-                className='bg-black/20 backdrop-blur-md border-0'
+                variant='flat'
+                className='shadow-md shadow-black/20'
+                color='primary'
+                radius='full'
                 onPress={onClose}>
                 <IconX size={16} />
               </Button>
             </div>
             {/* Content */}
-            <div className='h-full overflow-y-auto flex justify-center'>
-              <div className='w-full max-w-sm'>
+            <ScrollShadow className='h-full flex justify-center'>
+              <div className='w-full max-w-sm rounded-2xl'>
                 <ViewWorkout
                   workoutId={workoutId}
                   onEdit={() => {
@@ -148,7 +150,7 @@ export default function IosContextModal({
                   }}
                 />
               </div>
-            </div>
+            </ScrollShadow>
           </motion.div>
         </>
       )}

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Spinner } from '@heroui/spinner'
-import WorkoutContainer from '@/components/container/workouts-page-content'
+import WorkoutContainer from '@/components/container/workouts-container'
 import { generateMetadata } from '@/lib/metadata'
 
 export const metadata = generateMetadata({

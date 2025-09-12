@@ -34,7 +34,7 @@ export default function ViewWorkout({
   return (
     <div className='p-4 pb-20 space-y-6'>
       {/* Workout Header */}
-      <Card>
+      <Card shadow='md'>
         <CardBody className='space-y-4'>
           <div className='flex items-start justify-between'>
             <div className='flex-1'>
